@@ -10,6 +10,38 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 from category2_predictor import Category2Predictor  # Import the Category2Predictor
 
+
+from flask import Flask, request, jsonify
+from huggingface_hub import InferenceClient
+
+app = Flask(__name__)
+
+# Initialize Hugging Face client with your token
+client = InferenceClient(
+    "meta-llama/Llama-3-8b-chat-hf",
+    token="YOUR_HUGGINGFACE_API_KEY"
+)
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    try:
+        user_input = request.json.get("question")
+
+        # Call Hugging Face API
+        response = client.text_generation(
+            user_input,
+            max_new_tokens=200,   # Limit length
+            temperature=0.7       # Creativity control
+        )
+
+        return jsonify({"answer": response})
+    
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
+
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///agripage.db'
@@ -597,4 +629,5 @@ def college_list():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+
     app.run(debug=True, host='0.0.0.0', port=5000)
